@@ -1,0 +1,22 @@
+# dsh-mlir-toolchain 安装补丁：把 mlir-toolchain 插件行插入 profile。
+#
+# 默认不写 toolchainPath：插件会按顺序自动发现
+#   ① 插件目录上一级的 toolchain.json（典型布局：mlir-lang/dsh-mlir-toolchain + mlir-lang/toolchain.json）
+#   ② 插件目录内的 toolchain.json
+#   ③ 会话 cwd/toolchain.json
+#   ④ <cwd>/mlir-lang/toolchain.json
+# 也可以用环境变量 MLIR_TOOLCHAIN_JSON 或在自己的 profile 补丁里按同 id 覆盖：
+#   - id: mlir-toolchain
+#     name: 'dsh-mlir-toolchain'
+#     config:
+#       toolchainPath: D:\somewhere\toolchain.json   # 单引号内反斜杠不转义
+#       includeDirs: ['D:\llvm-project\mlir\include'] # 可选：TableGen 的 -I 根
+#       logKeep: 100                                  # 可选：.mlir-logs 只留最近 N 份
+#
+# 路径缺失时插件仍会加载：工具在 execute 时返回 ok:false + 中文 hint，不会让宿主启动失败。
+- insert:
+    - id: mlir-toolchain
+      name: 'dsh-mlir-toolchain'
+      config:
+        timeoutMs: 120000
+        maxOutputBytes: 1048576

@@ -1,0 +1,51 @@
+{
+  "name": "dsh-mlir-toolchain",
+  "version": "0.2.0",
+  "description": "MLIR toolchain tools for DeepSeek Harness: mlir_probe / mlir_run / mlir_tblgen / mlir_parse_check. Reads toolchain.json, auto-discovers TableGen includes, returns actionable hints instead of ENOENT.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0",
+    "dsh": ">=0.2.1-rc.5 <0.3.0-0"
+  },
+  "scripts": {
+    "test": "node --test --test-isolation=none test/diag.test.mjs test/exec.test.mjs test/plugin.test.mjs test/integration.test.mjs",
+    "smoke": "node test/smoke.mjs"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "mlir",
+    "llvm",
+    "tablegen",
+    "compiler"
+  ],
+  "author": "Rcyc-1025",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rcyc-1025/dsh-mlir-toolchain.git"
+  },
+  "homepage": "https://github.com/Rcyc-1025/dsh-mlir-toolchain#readme",
+  "bugs": {
+    "url": "https://github.com/Rcyc-1025/dsh-mlir-toolchain/issues"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
