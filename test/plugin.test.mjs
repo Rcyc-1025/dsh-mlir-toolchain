@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { resolveConfig } from '../lib/config.js';
 import { createSubprocessRunner } from '../lib/exec.js';
@@ -10,6 +11,10 @@ import { fakeRunner, makeFixture } from './fixtures.mjs';
 import { fakeExec, fakeSpawn } from './helpers.mjs';
 
 const VERSION_TEXT = 'LLVM (http://llvm.org/):\n  LLVM version 23.1.4\n  Optimized build.\n';
+
+/** 本仓库布局：插件目录的上一级就是 mlir-lang，旁边放 toolchain.json。 */
+const PACKAGE_ROOT = fileURLToPath(new URL('..', import.meta.url));
+const SIBLING_TOOLCHAIN = join(PACKAGE_ROOT, '..', 'toolchain.json');
 
 function makeMap(defs) {
   const map = {};
@@ -77,28 +82,30 @@ test('probe：工具存在但 --version 失败 → failed 而非 missing', async
   }
 });
 
-test('零配置：自动发现 cwd/toolchain.json', () => {
+test('零配置：插件包同级优先，没有时回退 cwd/toolchain.json', () => {
   const fixture = makeFixture();
   try {
     const cfg = resolveConfig({}, fixture.dir);
-    assert.equal(cfg.toolchainPath, fixture.toolchainPath);
+    assert.equal(cfg.toolchainPath, existsSync(SIBLING_TOOLCHAIN) ? SIBLING_TOOLCHAIN : fixture.toolchainPath);
   } finally {
     fixture.cleanup();
   }
 });
 
-test('运行时兜底：配置里没发现 toolchain.json 时按会话 cwd 再找一次', async () => {
+test('运行时兜底：加载期没发现时按会话 cwd 重新发现（本仓布局先命中包同级）', async () => {
   const fixture = makeFixture();
   try {
     const empty = join(fixture.dir, 'empty');
     mkdirSync(empty, { recursive: true });
     const cfg = resolveConfig({}, empty);
-    assert.equal(cfg.toolchainPath, null);
+    // 本仓库里插件包同级就有 toolchain.json，加载期必然找到；强制清空以模拟
+    // “部署时没找到”，验证每次执行按会话 cwd 的兜底发现。
+    cfg.toolchainPath = null;
     const runner = fakeRunner(() => ({ stdout: VERSION_TEXT }));
     const tools = makeMap(buildMlirTools(cfg, runner));
     const result = await tools.mlir_probe.execute({}, fakeExec(fixture.dir));
     assert.equal(result.ok, true, JSON.stringify(result.missing));
-    assert.equal(result.toolchainPath, fixture.toolchainPath);
+    assert.equal(result.toolchainPath, existsSync(SIBLING_TOOLCHAIN) ? SIBLING_TOOLCHAIN : fixture.toolchainPath);
     assert.equal(result.source, 'toolchain.json');
   } finally {
     fixture.cleanup();
